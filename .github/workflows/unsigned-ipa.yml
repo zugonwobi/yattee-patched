@@ -1,0 +1,37 @@
+name: Build unsigned iOS IPA (for local sideload signing)
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clear SPM cache
+        run: rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts
+      - name: Build unsigned .app for iOS
+        run: |
+          xcodebuild \
+            -project Yattee.xcodeproj \
+            -scheme Yattee \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build
+      - name: Package as unsigned IPA
+        run: |
+          APP_PATH=$(find build/Build/Products -maxdepth 1 -name "*.app" | head -1)
+          echo "Found app at: $APP_PATH"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r Yattee-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yattee-unsigned-ipa
+          path: Yattee-unsigned.ipa
+          if-no-files-found: error
