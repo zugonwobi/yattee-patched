@@ -7,6 +7,16 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - name: Free up runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /Applications/Xcode_16*.app /Applications/Xcode_15*.app 2>/dev/null || true
+          xcrun simctl delete unavailable 2>/dev/null || true
+          rm -rf ~/Library/Developer/CoreSimulator/Caches 2>/dev/null || true
+          rm -rf ~/Library/Developer/Xcode/DerivedData 2>/dev/null || true
+          rm -rf ~/Library/Developer/Xcode/Archives 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          df -h /
       - name: Clear SPM cache
         run: rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts
       - name: Build unsigned .app for iOS
